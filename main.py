@@ -41,7 +41,7 @@ def main():
             break
         if result is None:
             # No finger
-            output = "None"
+            output = "None\n"
         else:
             # Finger Detected
             x = int(result[0] / cam_res[0] * args.width)
