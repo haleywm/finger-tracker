@@ -13,29 +13,37 @@ def main():
 
     parser.add_argument("width", help="Output position width", type=int)
     parser.add_argument("height", help="Output position height", type=int)
-    parser.add_argument("pipe", help="Location to create a pipe for writing data", type=str)
+    parser.add_argument("-o", "--output", help="Location to create a pipe for writing data", type=str)
     parser.add_argument("-c", "--cameraid", help="Camera ID to use", type=int, default=0)
     parser.add_argument("-t", "--tolerance", help="Border around edges of camera to not search for pixles", type=int, default=10)
     parser.add_argument("-v", "--verbose", help="If additional details should be printed to console", action="store_true")
 
     args = parser.parse_args()
 
+    print("Starting program...")
+    print("Press Q on the window to close")
+
+    return cameraLoop(args.cameraid, args.output, args.width, args.height, args.tolerance, args.verbose)
+    
+
+def cameraLoop(cam_id, pipe, width, height, tolerance, verbose):
     try:
-        cap, backSub, cam_res = setupVideoProcessing(args.cameraid)
+        cap, backSub, cam_res = setupVideoProcessing(cam_id)
     except DisconnectedException as e:
         print(e.message)
         return 1
 
-    try:
-        os.mkfifo(args.pipe)
-        fifo = open(args.pipe, "w")
-    except Exception as e:
-        print(f"Error: {e.message}")
-        return 1
+    if pipe:
+        try:
+            os.mkfifo(pipe)
+            fifo = open(pipe, "w")
+        except Exception as e:
+            print(f"Error: {e.message}")
+            return 1
 
     while True:
         try:
-            result = processNextFrame(cap, backSub, args.tolerance)
+            result = processNextFrame(cap, backSub, tolerance)
         except DisconnectedException as e:
             print(e.message)
             break
@@ -44,22 +52,26 @@ def main():
             output = "None\n"
         else:
             # Finger Detected
-            x = int(result[0] / cam_res[0] * args.width)
-            y = int(result[1] / cam_res[1] * args.height)
+            x = int(result[0] / cam_res[0] * width)
+            y = int(result[1] / cam_res[1] * height)
             output = f"{x}, {y}\n"
         
         # Write to pipe
-        fifo.write(output)
-        fifo.flush()
+        if pipe:
+            fifo.write(output)
+            fifo.flush()
 
-        if args.verbose:
+        if verbose:
             print("Status: " + output)
     
     # Cleanup
     cv2.destroyAllWindows()
     cap.release()
-    fifo.close()
-    os.unlink(args.pipe)
+    if pipe:
+        fifo.close()
+        os.unlink(pipe)
+
+    return 0
 
 
 def processNextFrame(cap, backSub, tol):
