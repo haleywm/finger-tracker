@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 import cv2
-import os
+import sys
 
 FRAMERATE = 30
 AVERAGE_AMOUNT = 30
@@ -13,39 +13,26 @@ def main():
 
     parser.add_argument("width", help="Output position width", type=int)
     parser.add_argument("height", help="Output position height", type=int)
-    parser.add_argument("-o", "--output", help="Location to create a pipe for writing data", type=str)
     parser.add_argument("-c", "--cameraid", help="Camera ID to use", type=int, default=0)
     parser.add_argument("-t", "--tolerance", help="Border around edges of camera to not search for pixles", type=int, default=10)
-    parser.add_argument("-v", "--verbose", help="If additional details should be printed to console", action="store_true")
 
     args = parser.parse_args()
 
-    print("Starting program...")
-    print("Press Q on the window to close")
-
-    return cameraLoop(args.cameraid, args.output, args.width, args.height, args.tolerance, args.verbose)
+    return cameraLoop(args.cameraid, args.width, args.height, args.tolerance)
     
 
-def cameraLoop(cam_id, pipe, width, height, tolerance, verbose):
+def cameraLoop(cam_id, width, height, tolerance):
     try:
         cap, backSub, cam_res = setupVideoProcessing(cam_id)
     except DisconnectedException as e:
-        print(e.message)
+        print(e.message, file=sys.stderr)
         return 1
-
-    if pipe:
-        try:
-            os.mkfifo(pipe)
-            fifo = open(pipe, "w")
-        except Exception as e:
-            print(f"Error: {e.message}")
-            return 1
 
     while True:
         try:
             result = processNextFrame(cap, backSub, tolerance)
         except DisconnectedException as e:
-            print(e.message)
+            print(e.message, file=sys.stderr)
             break
         if result is None:
             # No finger
@@ -54,22 +41,13 @@ def cameraLoop(cam_id, pipe, width, height, tolerance, verbose):
             # Finger Detected
             x = int(result[0] / cam_res[0] * width)
             y = int(result[1] / cam_res[1] * height)
-            output = f"{x}, {y}\n"
-        
-        # Write to pipe
-        if pipe:
-            fifo.write(output)
-            fifo.flush()
+            output = f"{x},{y}\n"
 
-        if verbose:
-            print("Status: " + output)
+        print(output, flush=True)
     
     # Cleanup
     cv2.destroyAllWindows()
     cap.release()
-    if pipe:
-        fifo.close()
-        os.unlink(pipe)
 
     return 0
 
@@ -124,7 +102,7 @@ def processFrameThreshhold(frame, backSub):
     return contour
 
 def setupVideoProcessing(cam_id):
-    print("Initializing Video Capture")
+    #print("Initializing Video Capture")
     cap = cv2.VideoCapture(cam_id)
     
     backSub = cv2.createBackgroundSubtractorKNN()
@@ -132,7 +110,7 @@ def setupVideoProcessing(cam_id):
     if cap.isOpened():
         _, frame = cap.read()
         cam_res = (frame.shape[1], frame.shape[0])
-        print(f"Video has resolution of {cam_res[0]} x {cam_res[1]}")
+        #print(f"Video has resolution of {cam_res[0]} x {cam_res[1]}")
         return (cap, backSub, cam_res)
     else:
         raise DisconnectedException("Unable to establish connection")
