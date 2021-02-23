@@ -11,17 +11,15 @@ def main():
     # Will flesh out arguments as I find the need for them
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("width", help="Output position width", type=int)
-    parser.add_argument("height", help="Output position height", type=int)
     parser.add_argument("-c", "--cameraid", help="Camera ID to use", type=int, default=0)
     parser.add_argument("-t", "--tolerance", help="Border around edges of camera to not search for pixles", type=int, default=10)
 
     args = parser.parse_args()
 
-    return cameraLoop(args.cameraid, args.width, args.height, args.tolerance)
+    return cameraLoop(args.cameraid, args.tolerance)
     
 
-def cameraLoop(cam_id, width, height, tolerance):
+def cameraLoop(cam_id, tolerance):
     try:
         cap, backSub, cam_res = setupVideoProcessing(cam_id)
     except DisconnectedException as e:
@@ -39,9 +37,9 @@ def cameraLoop(cam_id, width, height, tolerance):
             output = "None"
         else:
             # Finger Detected
-            x = int(result[0] / cam_res[0] * width)
-            y = int(result[1] / cam_res[1] * height)
-            output = f"{x},{y}"
+            x = result[0] / cam_res[0]
+            y = result[1] / cam_res[1]
+            output = f"{x:.4f},{y:.4f}"
 
         print(output, flush=True)
     
