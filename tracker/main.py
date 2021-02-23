@@ -88,7 +88,8 @@ def processNextFrame(cap, backSub, tol):
 
 
 def processFrameThreshhold(frame, backSub):
-    thresh = backSub.apply(frame, 0.1)
+    #thresh = backSub.apply(frame, 0.1)
+    thresh = backSub.apply(frame)
 
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) > 0:
