@@ -36,12 +36,12 @@ def cameraLoop(cam_id, width, height, tolerance):
             break
         if result is None:
             # No finger
-            output = "None\n"
+            output = "None"
         else:
             # Finger Detected
             x = int(result[0] / cam_res[0] * width)
             y = int(result[1] / cam_res[1] * height)
-            output = f"{x},{y}\n"
+            output = f"{x},{y}"
 
         print(output, flush=True)
     
